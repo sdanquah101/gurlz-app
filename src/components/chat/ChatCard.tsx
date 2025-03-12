@@ -5,6 +5,18 @@ import { User, MessageCircle, Heart, Eye, AlertTriangle, Trash2 } from 'lucide-r
 import { useAuthStore } from '../../store/authStore';
 import { useChat } from '../../hooks/useChat';
 
+// Map to consistently assign anonymous names
+const anonUserMap = new Map();
+let anonCounter = 1;
+
+// Function to get consistent anonymous names
+const getAnonDisplayName = (userId) => {
+  if (!anonUserMap.has(userId)) {
+    anonUserMap.set(userId, `AnonGurl${anonCounter++}`);
+  }
+  return anonUserMap.get(userId);
+};
+
 interface ChatCardProps {
   id: string;
   content: string;
@@ -14,11 +26,12 @@ interface ChatCardProps {
     avatar?: string;
   };
   isAnonymous: boolean;
-  isSuitableForMinors: boolean;
+  isSuitableForMinors?: boolean;
   timestamp: string;
   color: string;
   onClick: () => void;
   onDelete?: () => void;
+  className?: string; // Added to allow additional styling
 }
 
 export default function ChatCard({
@@ -26,11 +39,12 @@ export default function ChatCard({
   content,
   author,
   isAnonymous,
-  isSuitableForMinors,
+  isSuitableForMinors = true,
   timestamp,
   color,
   onClick,
   onDelete,
+  className = '', // Default to empty string
 }: ChatCardProps) {
   const user = useAuthStore(state => state.user);
   const navigate = useNavigate();
@@ -39,7 +53,11 @@ export default function ChatCard({
   const { parentMessage, toggleLike } = useChat(id);
 
   const isAuthor = user?.id === author.id;
-  const displayName = isAnonymous ? 'Anonymous' : (author?.username || 'Unknown User');
+  
+  // Use the new anonymous naming convention
+  const displayName = isAnonymous 
+    ? getAnonDisplayName(author.id)
+    : (author?.username || 'Unknown User');
   
   // Get metrics from parentMessage if available, otherwise use defaults
   const metrics = parentMessage ? {
@@ -97,7 +115,7 @@ export default function ChatCard({
   return (
     <div
       onClick={onClick}
-      className={`w-full p-6 rounded-xl text-left transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-white/20 cursor-pointer ${color}`}
+      className={`w-full p-6 rounded-xl text-left transition-all hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-white/20 cursor-pointer ${color} ${className}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">

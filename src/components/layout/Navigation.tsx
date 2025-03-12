@@ -23,6 +23,26 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = React.useState(false);
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  
+  // Remove any scroll-based visibility behavior
+  React.useEffect(() => {
+    // This ensures the menu button is always visible regardless of scroll position
+    const handleScroll = () => {
+      const menuButton = document.getElementById('mobile-menu-button');
+      if (menuButton) {
+        menuButton.style.opacity = '1';
+        menuButton.style.visibility = 'visible';
+      }
+    };
+    
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll);
+    // Ensure visibility on initial load
+    handleScroll();
+    
+    // Clean up
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const isActive = (path: string) => location.pathname.startsWith(path);
 
@@ -39,26 +59,29 @@ export default function Navigation() {
 
   return (
     <>
-      {/* Mobile Menu Button */}
+      {/* Mobile Menu Button - Always visible */}
       <button 
+        id="mobile-menu-button"
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed top-4 left-4 z-20 p-2 rounded-full bg-primary text-white md:hidden hover:bg-primary-dark"
+        className="fixed top-4 left-4 z-50 p-2 rounded-full bg-primary text-white md:hidden hover:bg-primary-dark shadow-md opacity-100 transition-none"
+        style={{ visibility: 'visible' }}
+        aria-label="Toggle menu"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      {/* Overlay */}
+      {/* Overlay - Modified to not cover the navigation menu */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-20 md:hidden" 
+          className="fixed inset-0 right-64 bg-black/50 z-40 md:hidden" 
           onClick={() => setIsOpen(false)}
         />
       )}
 
-      {/* Navigation Menu */}
+      {/* Navigation Menu - Increased z-index */}
       <nav className={`
         fixed inset-y-0 left-0 w-64 bg-gradient-to-b from-primary to-primary-dark text-white
-        transform transition-transform duration-300 ease-in-out z-30
+        transform transition-transform duration-300 ease-in-out z-50
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
@@ -83,6 +106,7 @@ export default function Navigation() {
               <button 
                 onClick={() => handleNavigation('/profile')}
                 className="mt-6 w-full flex items-center space-x-4 hover:bg-primary-light/20 p-3 rounded-lg transition-colors"
+                aria-label="View profile"
               >
                 <div className="w-16 h-16 rounded-full bg-secondary-dark text-primary-dark flex items-center justify-center font-semibold overflow-hidden flex-shrink-0">
                   {user.profileImage ? (
@@ -118,6 +142,7 @@ export default function Navigation() {
             <button
               onClick={handleSignOut}
               className="w-full flex items-center p-3 rounded-lg text-secondary-dark hover:bg-primary-light/20 transition-all duration-200"
+              aria-label="Sign out"
             >
               <LogOut className="mr-3" size={20} />
               <span>Sign Out</span>
@@ -147,6 +172,7 @@ function NavItem({ icon: Icon, label, isActive, onClick }: NavItemProps) {
           : 'text-secondary-dark hover:bg-primary-light/20'
         }
       `}
+      aria-label={`Navigate to ${label}`}
     >
       <Icon size={20} className="mr-3" />
       <span>{label}</span>

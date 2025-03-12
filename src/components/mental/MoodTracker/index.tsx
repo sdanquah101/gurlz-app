@@ -42,18 +42,20 @@ export default function MoodTracker() {
 
   return (
     <div className="relative min-h-screen bg-gray-50">
-      {/* Toggle Calendar Button */}
-      <button
-        onClick={() => setShowCalendar(!showCalendar)}
-        className="fixed top-4 right-4 z-30 p-2 sm:p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
-        aria-label={showCalendar ? "Close calendar" : "Open calendar"}
-      >
-        {showCalendar ? (
-          <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-        ) : (
-          <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-        )}
-      </button>
+      {/* Calendar Button - Fixed position with higher z-index */}
+      <div className="fixed top-0 right-0 w-full pointer-events-none flex justify-end p-4 z-50">
+        <button
+          onClick={() => setShowCalendar(!showCalendar)}
+          className="pointer-events-auto p-2 sm:p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-shadow"
+          aria-label={showCalendar ? "Close calendar" : "Open calendar"}
+        >
+          {showCalendar ? (
+            <X className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+          ) : (
+            <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+          )}
+        </button>
+      </div>
 
       {/* Sliding Calendar Sidebar */}
       <AnimatePresence>
@@ -65,7 +67,7 @@ export default function MoodTracker() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowCalendar(false)}
-              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-10 md:hidden"
+              className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 md:hidden"
             />
             
             {/* Calendar Panel */}
@@ -74,7 +76,7 @@ export default function MoodTracker() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 20 }}
-              className="fixed top-0 right-0 h-full w-full sm:w-[90%] md:w-96 bg-white shadow-xl z-20 overflow-y-auto"
+              className="fixed top-0 right-0 h-full w-full sm:w-[90%] md:w-96 bg-white shadow-xl z-40 overflow-y-auto"
             >
               <div className="p-4 mt-16">
                 <h2 className="text-xl font-semibold text-gray-800 mb-4">Mood Calendar</h2>
@@ -119,18 +121,6 @@ export default function MoodTracker() {
             selectedTriggers={selectedTriggers}
           />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Add a note (optional)
-            </label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              className="w-full p-3 rounded-xl border-2 border-primary/20 focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none text-sm sm:text-base"
-              rows={3}
-              placeholder="How are you feeling today?"
-            />
-          </div>
 
           <Button
             onClick={handleSubmit}

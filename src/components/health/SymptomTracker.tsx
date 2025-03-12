@@ -5,8 +5,7 @@ import {
   Flame, Cloud, Pizza, Clock, Utensils, Squirrel, BatteryCharging
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-
-
+import { useHealthStore } from '../../store/healthStore';
 
 interface SymptomTrackerProps {
   selectedDate: Date;
@@ -21,16 +20,30 @@ export default function SymptomTracker({
   userId,
   cycles 
 }: SymptomTrackerProps) {
+  // Get required methods from health store
+  const addSymptom = useHealthStore(state => state.addSymptom);
+  const updateSymptom = useHealthStore(state => state.updateSymptom);
+  const symptoms = useHealthStore(state => state.symptoms);
+  const fetchSymptoms = useHealthStore(state => state.fetchSymptoms);
+  const loading = useHealthStore(state => state.symptomLoading);
+  const error = useHealthStore(state => state.symptomError);
+
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
-  const [intensity, setIntensity] = useState<number>(1);
-  const [note, setNote] = useState<string>('');
-  const [savedLogs, setSavedLogs] = useState<any[]>([]);
   const [predictedSymptoms, setPredictedSymptoms] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [existingLog, setExistingLog] = useState<any>(null);
+  const [authStatus, setAuthStatus] = useState<{
+    isAuthenticated: boolean;
+    user: any;
+    error: string | null;
+  }>({
+    isAuthenticated: false,
+    user: null,
+    error: null
+  });
 
   // Comprehensive symptom list
-  const symptoms = [
+  const symptomsList = [
     { id: 'cramps', label: 'Cramps', icon: <Activity size={18} /> },
     { id: 'headache', label: 'Headache', icon: <Frown size={18} /> },
     { id: 'bloating', label: 'Bloating', icon: <Droplets size={18} /> },
@@ -53,6 +66,55 @@ export default function SymptomTracker({
     { id: 'spotting', label: 'Spotting', icon: <Droplets size={18} /> }
   ];
 
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error('Auth error:', error);
+          setAuthStatus({
+            isAuthenticated: false,
+            user: null,
+            error: error.message
+          });
+          return;
+        }
+        
+        if (user) {
+          console.log('Authenticated user:', user.id);
+          setAuthStatus({
+            isAuthenticated: true,
+            user,
+            error: null
+          });
+        } else {
+          console.warn('No authenticated user found');
+          setAuthStatus({
+            isAuthenticated: false,
+            user: null,
+            error: 'No authenticated user found'
+          });
+        }
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setAuthStatus({
+          isAuthenticated: false,
+          user: null,
+          error: 'Error checking authentication status'
+        });
+      }
+    };
+    
+    checkAuth();
+  }, []);
+
+  // Fetch symptoms data from store
+  useEffect(() => {
+    fetchSymptoms();
+  }, [fetchSymptoms]);
+
   // Load existing symptom log for selected date and predicted symptoms
   useEffect(() => {
     const loadSymptomData = async () => {
@@ -62,49 +124,24 @@ export default function SymptomTracker({
         // Format date to ISO string without time
         const dateString = selectedDate.toISOString().split('T')[0];
         
-        // Fetch existing log for this date
-        const { data: logData, error: logError } = await supabase
-          .from('symptom_logs')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('date', dateString)
-          .single();
+        // Find symptom log for this date (from store data)
+        const existingSymptom = symptoms.find(symp => 
+          new Date(symp.date).toISOString().split('T')[0] === dateString
+        );
         
-        if (logError && logError.code !== 'PGRST116') { // PGRST116 is "no rows returned" error
-          console.error('Error fetching symptom log:', logError);
-        }
-        
-        if (logData) {
+        if (existingSymptom) {
           // Existing log found, populate form
-          setExistingLog(logData);
-          setSelectedSymptoms(logData.symptoms || []);
-          setIntensity(logData.intensity || 1);
-          setNote(logData.note || '');
+          setExistingLog(existingSymptom);
+          setSelectedSymptoms(existingSymptom.symptoms || []);
         } else {
           // Reset form for new entry
           setExistingLog(null);
           setSelectedSymptoms([]);
-          setIntensity(1);
-          setNote('');
           
           // Only predict symptoms if we don't have an existing log
           if (currentCycleDay !== null) {
-            await predictSymptoms(currentCycleDay);
+            predictSymptoms(currentCycleDay);
           }
-        }
-        
-        // Load recent logs for history display
-        const { data: recentLogs, error: recentLogsError } = await supabase
-          .from('symptom_logs')
-          .select('*')
-          .eq('user_id', userId)
-          .order('date', { ascending: false })
-          .limit(5);
-        
-        if (recentLogsError) {
-          console.error('Error fetching recent logs:', recentLogsError);
-        } else {
-          setSavedLogs(recentLogs || []);
         }
       } catch (error) {
         console.error('Error in loadSymptomData:', error);
@@ -113,34 +150,30 @@ export default function SymptomTracker({
       setIsLoading(false);
     };
     
-    loadSymptomData();
-  }, [selectedDate, userId, currentCycleDay]);
+    // Only load data if we have symptoms from the store
+    if (symptoms.length >= 0) {
+      loadSymptomData();
+    }
+  }, [selectedDate, symptoms, currentCycleDay]);
 
   // Predict symptoms based on historical data for the current cycle day
-  const predictSymptoms = async (cycleDay: number) => {
+  const predictSymptoms = (cycleDay: number) => {
     try {
-      // Fetch all historical symptom logs that have a cycle_day matching current cycle day
-      const { data, error } = await supabase
-        .from('symptom_logs')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('cycle_day', cycleDay);
+      // Find all past symptoms on the same cycle day
+      const cycleSpecificSymptoms = symptoms.filter(
+        log => log.cycle_day === cycleDay
+      );
       
-      if (error) {
-        console.error('Error predicting symptoms:', error);
-        return;
-      }
-      
-      if (!data || data.length === 0) {
+      if (!cycleSpecificSymptoms || cycleSpecificSymptoms.length === 0) {
         setPredictedSymptoms([]);
         return;
       }
       
       // Count frequency of each symptom
       const symptomCounts: Record<string, number> = {};
-      let totalLogs = data.length;
+      let totalLogs = cycleSpecificSymptoms.length;
       
-      data.forEach(log => {
+      cycleSpecificSymptoms.forEach(log => {
         if (log.symptoms && Array.isArray(log.symptoms)) {
           log.symptoms.forEach((symptom: string) => {
             symptomCounts[symptom] = (symptomCounts[symptom] || 0) + 1;
@@ -169,71 +202,41 @@ export default function SymptomTracker({
     }
   };
 
-  // Save symptoms to Supabase
+  // Save symptoms using health store
   const handleSave = async () => {
     if (selectedSymptoms.length === 0) return;
     
     try {
-      // Format date to ISO string without time
-      const dateString = selectedDate.toISOString().split('T')[0];
-      
-      // Prepare data for saving
       const symptomData = {
-        user_id: userId,
-        date: dateString,
+        date: selectedDate,
         symptoms: selectedSymptoms,
-        intensity,
-        note,
-        cycle_day: currentCycleDay,
-        created_at: new Date().toISOString()
+        intensity: 1, // Default value since we removed the UI
+        cycle_day: currentCycleDay || undefined
       };
+      
+      console.log('Saving symptom data:', symptomData);
       
       let result;
       
       if (existingLog) {
         // Update existing log
-        const { data, error } = await supabase
-          .from('symptom_logs')
-          .update(symptomData)
-          .eq('id', existingLog.id)
-          .select();
-        
-        if (error) throw error;
-        result = data;
+        result = await updateSymptom(existingLog.id, symptomData);
       } else {
         // Insert new log
-        const { data, error } = await supabase
-          .from('symptom_logs')
-          .insert(symptomData)
-          .select();
-        
-        if (error) throw error;
-        result = data;
+        result = await addSymptom(symptomData);
       }
       
+      console.log('Save result:', result);
+      
       // Update UI with saved log
-      if (result && result[0]) {
-        setExistingLog(result[0]);
-        
-        // Update recent logs list
-        const { data: recentLogs, error: recentLogsError } = await supabase
-          .from('symptom_logs')
-          .select('*')
-          .eq('user_id', userId)
-          .order('date', { ascending: false })
-          .limit(5);
-        
-        if (!recentLogsError) {
-          setSavedLogs(recentLogs || []);
-        }
-      }
+      setExistingLog(result);
       
       // Show success message
       alert('Symptoms saved successfully!');
       
     } catch (error) {
       console.error('Error saving symptoms:', error);
-      alert('Failed to save symptoms. Please try again.');
+      alert(`Failed to save symptoms: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -243,6 +246,25 @@ export default function SymptomTracker({
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  // Filter recent logs
+  const recentLogs = symptoms
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .slice(0, 5);
+
+  // Display auth error if present
+  if (authStatus.error) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <Clipboard className="w-6 h-6 text-red-500" />
+          <h2 className="text-lg font-semibold text-red-500">Authentication Error</h2>
+        </div>
+        <p className="text-red-500">{authStatus.error}</p>
+        <p className="mt-4 text-sm">Please make sure you are logged in and refresh the page.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
       <div className="flex items-center space-x-3 mb-4">
@@ -250,6 +272,7 @@ export default function SymptomTracker({
         <h2 className="text-lg font-semibold text-primary">Symptom Tracker</h2>
       </div>
       
+     
       {/* Current cycle day info */}
       {currentCycleDay !== null && (
         <div className="bg-primary/10 p-3 rounded-lg">
@@ -271,7 +294,7 @@ export default function SymptomTracker({
           </p>
           <div className="flex flex-wrap gap-2">
             {predictedSymptoms.map(symptomId => {
-              const symptom = symptoms.find(s => s.id === symptomId);
+              const symptom = symptomsList.find(s => s.id === symptomId);
               return symptom ? (
                 <span key={symptomId} className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full flex items-center">
                   {symptom.icon}
@@ -283,7 +306,7 @@ export default function SymptomTracker({
         </div>
       )}
       
-      {isLoading ? (
+      {isLoading || loading ? (
         <div className="py-8 text-center">
           <p className="text-gray-500">Loading symptoms...</p>
         </div>
@@ -292,7 +315,7 @@ export default function SymptomTracker({
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-gray-700">Select Symptoms</h3>
             <div className="grid grid-cols-2 gap-2">
-              {symptoms.map(symptom => (
+              {symptomsList.map(symptom => (
                 <button
                   key={symptom.id}
                   onClick={() => handleSymptomToggle(symptom.id)}
@@ -309,37 +332,11 @@ export default function SymptomTracker({
             </div>
           </div>
           
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-gray-700">Intensity</h3>
-            <div className="flex justify-between items-center">
-              <input
-                type="range"
-                min={1}
-                max={5}
-                value={intensity}
-                onChange={e => setIntensity(parseInt(e.target.value))}
-                className="w-full accent-primary"
-              />
-              <span className="ml-3 text-primary font-bold">{intensity}/5</span>
-            </div>
-          </div>
-          
-          <div className="space-y-3">
-            <h3 className="text-sm font-medium text-gray-700">Notes</h3>
-            <textarea
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder="Add any additional details..."
-              className="w-full p-3 border rounded-lg text-sm"
-              rows={2}
-            />
-          </div>
-          
           <button
             onClick={handleSave}
-            disabled={selectedSymptoms.length === 0}
+            disabled={selectedSymptoms.length === 0 || !authStatus.isAuthenticated}
             className={`w-full py-2 rounded-lg font-medium flex items-center justify-center ${
-              selectedSymptoms.length > 0
+              selectedSymptoms.length > 0 && authStatus.isAuthenticated
                 ? 'bg-primary text-white' 
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
             }`}
@@ -351,27 +348,27 @@ export default function SymptomTracker({
       )}
       
       {/* Recent logs */}
-      {savedLogs.length > 0 && (
+      {recentLogs.length > 0 && (
         <div className="mt-4">
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-medium text-gray-700">Recent Logs</h3>
-            {savedLogs.length > 5 && (
+            {symptoms.length > 5 && (
               <a href="#" className="text-xs text-primary">View all</a>
             )}
           </div>
           <div className="space-y-2">
-            {savedLogs.map(log => (
+            {recentLogs.map(log => (
               <div key={log.id} className="p-3 bg-gray-50 rounded-lg">
                 <div className="flex justify-between">
                   <p className="text-sm font-medium text-gray-700">
-                    {formatDate(log.date)}
+                    {formatDate(log.date.toString())}
                     {log.cycle_day !== null && (
                       <span className="ml-2 text-xs text-gray-500">Day {log.cycle_day}</span>
                     )}
                   </p>
                   <div className="flex space-x-1">
                     {log.symptoms.slice(0, 3).map((symptomId: string) => {
-                      const symptom = symptoms.find(s => s.id === symptomId);
+                      const symptom = symptomsList.find(s => s.id === symptomId);
                       return symptom ? (
                         <span key={symptomId} className="text-primary">
                           {symptom.icon}
@@ -386,8 +383,7 @@ export default function SymptomTracker({
                   </div>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Intensity: {log.intensity}/5
-                  {log.note && <span className="ml-2">"{log.note.substring(0, 30)}{log.note.length > 30 ? '...' : ''}"</span>}
+                  {log.cycle_day !== null && <span>Cycle day: {log.cycle_day}</span>}
                 </p>
               </div>
             ))}
@@ -399,13 +395,9 @@ export default function SymptomTracker({
       <div className="bg-blue-50 p-4 rounded-lg">
         <h3 className="text-sm font-medium text-blue-700 mb-2">Symptom Insights</h3>
         <p className="text-xs text-blue-600">
-          Track your symptoms regularly to identify patterns and improve cycle predictions.
-          Your most common symptoms are bloating, fatigue, and mood swings.
+          Click on 'Period Analytics' from the header to view insights into your logged symptoms
         </p>
-        <button className="mt-3 text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full flex items-center">
-          <ArrowRight size={12} className="mr-1" />
-          View detailed analysis
-        </button>
+  
       </div>
     </div>
   );

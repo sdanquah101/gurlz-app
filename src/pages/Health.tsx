@@ -10,27 +10,29 @@ import { useHealthStore } from '../store/healthStore';
  * PageHeader Component
  */
 const PageHeader = ({ title, description, onAnalyticsClick, onResourcesClick }) => (
-  <div className="bg-gradient-to-r from-primary to-primary-dark text-white p-8 rounded-3xl">
-    <div className="flex justify-between items-start">
+  <div className="bg-gradient-to-r from-primary to-primary-dark text-white p-4 md:p-8 rounded-xl md:rounded-3xl">
+    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
       <div>
-        <h1 className="text-3xl font-bold mb-4">{title}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold mb-2 md:mb-4">{title}</h1>
         <p className="text-secondary-light/90">{description}</p>
       </div>
-      <div className="flex space-x-4">
+      <div className="flex flex-col sm:flex-row gap-3 sm:space-x-4">
         <Button
           variant="secondary"
           aria-label="Open Analytics Panel"
           onClick={onAnalyticsClick}
+          className="w-full sm:w-auto text-sm md:text-base"
         >
-          <ChevronLeft size={20} className="mr-2" />
+          <ChevronLeft size={18} className="mr-1 md:mr-2" />
           Period Analytics
         </Button>
         <Button
           variant="secondary"
           aria-label="Open Resources Panel"
           onClick={onResourcesClick}
+          className="w-full sm:w-auto text-sm md:text-base"
         >
-          <ChevronRight size={20} className="mr-2" />
+          <ChevronRight size={18} className="mr-1 md:mr-2" />
           Resources
         </Button>
       </div>
@@ -72,7 +74,7 @@ const Health: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 md:space-y-8 px-3 sm:px-5 md:px-6">
       {/* Header */}
       <PageHeader
         title="Reproductive Health"
@@ -89,14 +91,14 @@ const Health: React.FC = () => {
 
       {/* Loading State */}
       {loading && cycles.length === 0 && (
-        <div className="text-center py-8">
+        <div className="text-center py-4 md:py-8">
           <div className="animate-pulse">Loading your period data...</div>
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <div className="bg-red-50 p-4 rounded-lg text-red-700 mb-4">
+        <div className="bg-red-50 p-3 md:p-4 rounded-lg text-red-700 mb-3 md:mb-4">
           <p>Error: {error}</p>
           <button 
             className="underline mt-2"
@@ -108,9 +110,9 @@ const Health: React.FC = () => {
       )}
 
       {/* Main Content */}
-      <div className={`grid lg:grid-cols-3 gap-8`}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
         {/* Calendar Section */}
-        <div className="lg:col-span-2">
+        <div className="md:col-span-1 lg:col-span-2">
           <PeriodCalendar
             cycles={cycles} // Pass cycles from the Zustand store
             predictions={predictions} // Pass predictions to PeriodCalendar
@@ -119,7 +121,7 @@ const Health: React.FC = () => {
             setSelectedDate={(date: Date) => handleStateUpdate('selectedDate', date)} // Update selected date
           />
           {!loading && cycles.length === 0 && (
-            <div className="text-center text-gray-500 mt-4">
+            <div className="text-center text-gray-500 mt-3 md:mt-4">
               <p>No data yet. Log your first period to get started!</p>
             </div>
           )}
@@ -144,7 +146,7 @@ const Health: React.FC = () => {
         onClose={() => handleStateUpdate('showPanel', false)}
         activeTab={state.activeTab}
         onTabChange={(tab) => handleStateUpdate('activeTab', tab)}
-        className="fixed inset-0 bg-white z-50 p-6 overflow-auto"
+        className="fixed inset-0 bg-white z-50 p-4 md:p-6 overflow-auto"
       />
     </div>
   );

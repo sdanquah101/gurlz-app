@@ -17,8 +17,9 @@ export interface SymptomData {
   user_id?: string;
   date: Date | string;
   symptoms: string[];      // Array of symptom identifiers
-  intensity: number;       // 1-5 scale
+  intensity: number;       // 1-5 scale (default to 1 if not using intensity UI)
   note?: string;           // Optional notes
+  cycle_day?: number;      // Optional cycle day
   created_at?: string;
 }
 
@@ -179,7 +180,7 @@ export const useHealthStore = create<HealthStore>((set, get) => ({
     return getCyclePredictions({ periods });
   },
   
-  // New symptom methods
+  // Updated symptom methods
   fetchSymptoms: async () => {
     set({ symptomLoading: true, symptomError: null });
     try {
@@ -190,9 +191,9 @@ export const useHealthStore = create<HealthStore>((set, get) => ({
         throw new Error('User not authenticated');
       }
 
-      // Fetch symptoms from Supabase
+      // Fetch symptoms from Supabase - using symptom_logs instead of symptoms table
       const { data, error } = await supabase
-        .from('symptoms')
+        .from('symptom_logs')
         .select('*')
         .eq('user_id', user.id)
         .order('date', { ascending: false });
@@ -205,8 +206,8 @@ export const useHealthStore = create<HealthStore>((set, get) => ({
         user_id: symptom.user_id,
         date: new Date(symptom.date),
         symptoms: symptom.symptoms,
-        intensity: symptom.intensity,
-        note: symptom.note,
+        intensity: 1, // Hardcoded as we removed intensity UI
+        cycle_day: symptom.cycle_day,
         created_at: symptom.created_at
       }));
 
@@ -225,9 +226,6 @@ export const useHealthStore = create<HealthStore>((set, get) => ({
       if (!symptomData.symptoms || symptomData.symptoms.length === 0) {
         throw new Error('At least one symptom is required');
       }
-      if (symptomData.intensity < 1 || symptomData.intensity > 5) {
-        throw new Error('Intensity must be between 1 and 5');
-      }
 
       // Get the current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -241,15 +239,14 @@ export const useHealthStore = create<HealthStore>((set, get) => ({
         ? symptomData.date 
         : symptomData.date.toISOString().split('T')[0];
 
-      // Insert new symptom
+      // Insert new symptom to symptom_logs table
       const { data, error } = await supabase
-        .from('symptoms')
+        .from('symptom_logs')
         .insert({
           user_id: user.id,
           date: formattedDate,
           symptoms: symptomData.symptoms,
-          intensity: symptomData.intensity,
-          note: symptomData.note || null
+          cycle_day: symptomData.cycle_day || null
         })
         .select();
 
@@ -261,8 +258,8 @@ export const useHealthStore = create<HealthStore>((set, get) => ({
         user_id: data[0].user_id,
         date: new Date(data[0].date),
         symptoms: data[0].symptoms,
-        intensity: data[0].intensity,
-        note: data[0].note,
+        intensity: 1, // Hardcoded as we removed intensity UI
+        cycle_day: data[0].cycle_day,
         created_at: data[0].created_at
       };
 
@@ -283,9 +280,9 @@ export const useHealthStore = create<HealthStore>((set, get) => ({
   removeSymptom: async (id) => {
     set({ symptomLoading: true, symptomError: null });
     try {
-      // Delete symptom
+      // Delete symptom from symptom_logs table
       const { error } = await supabase
-        .from('symptoms')
+        .from('symptom_logs')
         .delete()
         .eq('id', id);
 
@@ -316,12 +313,11 @@ export const useHealthStore = create<HealthStore>((set, get) => ({
       }
       
       if (updateData.symptoms) dbUpdateData.symptoms = updateData.symptoms;
-      if (updateData.intensity) dbUpdateData.intensity = updateData.intensity;
-      if ('note' in updateData) dbUpdateData.note = updateData.note || null;
+      if ('cycle_day' in updateData) dbUpdateData.cycle_day = updateData.cycle_day || null;
 
-      // Update symptom
+      // Update symptom in symptom_logs table
       const { data, error } = await supabase
-        .from('symptoms')
+        .from('symptom_logs')
         .update(dbUpdateData)
         .eq('id', id)
         .select();
@@ -334,8 +330,8 @@ export const useHealthStore = create<HealthStore>((set, get) => ({
         user_id: data[0].user_id,
         date: new Date(data[0].date),
         symptoms: data[0].symptoms,
-        intensity: data[0].intensity,
-        note: data[0].note,
+        intensity: 1, // Hardcoded as we removed intensity UI
+        cycle_day: data[0].cycle_day,
         created_at: data[0].created_at
       };
 

@@ -23,7 +23,7 @@ export default function InterestBinPage() {
             onClick={() => navigate('/fashion')}
           >
             <ArrowLeft size={20} className="mr-2" />
-            Back to Fashion
+            Back to Girlture
           </Button>
         </div>
         <h1 className="text-3xl font-bold mb-2">My Interest Bin</h1>

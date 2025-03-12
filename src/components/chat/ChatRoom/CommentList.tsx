@@ -48,71 +48,75 @@ export default function CommentList({
     });
   };
 
+  // Wrap comment with indentation container instead of using marginLeft
   const renderComment = (comment: Comment, depth = 0) => {
     const hasReplies = comment.replies && comment.replies.length > 0;
     const isExpanded = expandedComments.has(comment.id);
 
     return (
-      <div key={comment.id} style={{ marginLeft: `${depth * 24}px` }}>
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-3"
-        >
-          <ChatCard
-            id={comment.id}
-            content={comment.content}
-            author={comment.author}
-            isAnonymous={comment.isAnonymous}
-            timestamp={comment.timestamp}
-            likes={comment.likes}
-            comments={comment.replies || []}
-            color={depth === 0 ? "bg-gray-50 hover:bg-gray-100" : "bg-gray-100 hover:bg-gray-200"}
-            onClick={() => {}}
-            onReply={() => onReply?.(comment.id)}
-            onLike={() => onLike?.(comment.id)}
-            onReport={() => onReport?.(comment.id)}
-          />
-          
-          {hasReplies && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => toggleExpand(comment.id)}
-              className="ml-4 mt-2 text-gray-600 hover:text-gray-800"
-            >
-              <ChevronDown
-                size={16}
-                className={`mr-1 transform transition-transform ${
-                  isExpanded ? 'rotate-180' : ''
-                }`}
-              />
-              {isExpanded ? 'Hide' : 'Show'} {comment.replies!.length} replies
-            </Button>
-          )}
-        </motion.div>
+      <div key={comment.id} className="mb-3">
+        {/* Comment container with full width */}
+        <div className={depth > 0 ? `pl-6 border-l-2 border-gray-200 ml-6` : ''}>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <ChatCard
+              id={comment.id}
+              content={comment.content}
+              author={comment.author}
+              isAnonymous={comment.isAnonymous}
+              timestamp={comment.timestamp}
+              likes={comment.likes}
+              color={depth === 0 ? "bg-gray-50 hover:bg-gray-100" : "bg-gray-100 hover:bg-gray-200"}
+              onClick={() => {}}
+              onReply={() => onReply?.(comment.id)}
+              onLike={() => onLike?.(comment.id)}
+              onReport={() => onReport?.(comment.id)}
+              className="w-full" // Force full width
+            />
+            
+            {hasReplies && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => toggleExpand(comment.id)}
+                className="ml-4 mt-2 text-gray-600 hover:text-gray-800"
+              >
+                <ChevronDown
+                  size={16}
+                  className={`mr-1 transform transition-transform ${
+                    isExpanded ? 'rotate-180' : ''
+                  }`}
+                />
+                {isExpanded ? 'Hide' : 'Show'} {comment.replies!.length} replies
+              </Button>
+            )}
+          </motion.div>
 
-        {hasReplies && isExpanded && (
-          <AnimatePresence>
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-            >
-              {sortComments(comment.replies!).map(reply =>
-                renderComment(reply, depth + 1)
-              )}
-            </motion.div>
-          </AnimatePresence>
-        )}
+          {hasReplies && isExpanded && (
+            <AnimatePresence>
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="w-full" // Ensure replies container is full width
+              >
+                {sortComments(comment.replies!).map(reply =>
+                  renderComment(reply, depth + 1)
+                )}
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </div>
       </div>
     );
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-4">
+    <div className="flex-1 overflow-y-auto p-4 w-full">
       {/* Sort Controls */}
-      <div className="flex items-center justify-between mb-6 sticky top-0 bg-white z-10 p-2 border-b">
+      <div className="flex items-center justify-between mb-6 sticky top-0 bg-white z-10 p-2 border-b w-full">
         <h3 className="font-semibold text-gray-700">
           {comments.length} Comments
         </h3>
@@ -130,8 +134,8 @@ export default function CommentList({
         </div>
       </div>
 
-      {/* Comments */}
-      <div className="space-y-3">
+      {/* Comments with full width */}
+      <div className="space-y-3 w-full">
         {sortComments(comments).map(comment => renderComment(comment))}
       </div>
     </div>

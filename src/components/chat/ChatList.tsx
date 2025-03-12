@@ -9,12 +9,12 @@ import ChatCard from './ChatCard';
 import NewChatButton from './NewChatButton';
 
 const COLORS = [
-  'bg-primary',
   'bg-rose-500',
   'bg-violet-500',
   'bg-emerald-500',
   'bg-amber-500',
   'bg-indigo-500',
+  'bg-green-500'
 ];
 
 const getRandomColor = () => COLORS[Math.floor(Math.random() * COLORS.length)];

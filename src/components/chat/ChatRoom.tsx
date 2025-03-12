@@ -1,10 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Heart, MessageCircle, Eye, ArrowLeft, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
 import { useChat } from '../../hooks/useChat';
 import Button from '../common/Button';
+
+// Anonymous naming utility (could be moved to a separate file later)
+const anonUserMap = new Map();
+let anonCounter = 1;
+
+const getAnonDisplayName = (userId) => {
+  if (!anonUserMap.has(userId)) {
+    anonUserMap.set(userId, `AnonGurl${anonCounter++}`);
+  }
+  return anonUserMap.get(userId);
+};
 
 export default function ChatRoom() {
   const { chatId } = useParams<{ chatId: string }>();
@@ -22,6 +33,12 @@ export default function ChatRoom() {
     toggleLike,
     deleteMessage
   } = useChat(chatId);
+
+  // Reset anonCounter when component mounts
+  useEffect(() => {
+    anonCounter = 1;
+    anonUserMap.clear();
+  }, [chatId]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,7 +92,7 @@ export default function ChatRoom() {
   return (
     <div className="max-w-4xl mx-auto p-6">
       {/* Parent Message - Using dynamic color */}
-      <div className={`${parentMessage.color} rounded-xl overflow-hidden mb-6`}>
+      <div className={`${parentMessage.color} rounded-xl overflow-hidden mb-6 w-full`}>
         <div className="p-6">
           <Button 
             variant="secondary" 
@@ -91,7 +108,9 @@ export default function ChatRoom() {
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
                 {parentMessage.isAnonymous ? (
-                  <span className="text-lg font-bold text-white">A</span>
+                  <span className="text-lg font-bold text-white">
+                    {getAnonDisplayName(parentMessage.author.id)[0].toUpperCase()}
+                  </span>
                 ) : parentMessage.author.avatar ? (
                   <img 
                     src={parentMessage.author.avatar} 
@@ -106,7 +125,9 @@ export default function ChatRoom() {
               </div>
               <div>
                 <h2 className="font-semibold text-white">
-                  {parentMessage.isAnonymous ? 'Anonymous' : parentMessage.author.username}
+                  {parentMessage.isAnonymous 
+                    ? getAnonDisplayName(parentMessage.author.id) 
+                    : parentMessage.author.username}
                 </h2>
                 <p className="text-white/70 text-sm">
                   {parentMessage.created_at ? new Date(parentMessage.created_at).toLocaleString() : ''}
@@ -151,12 +172,12 @@ export default function ChatRoom() {
       </div>
 
       {/* Comments Section */}
-      <div className="bg-white rounded-xl p-6">
+      <div className="bg-white rounded-xl p-6 w-full">
         <h3 className="text-xl font-semibold text-gray-900 mb-6">
           Comments ({messages.length})
         </h3>
         
-        <div className="space-y-4 mb-6">
+        <div className="space-y-4 mb-6 w-full">
           <AnimatePresence mode="popLayout">
             {messages.map((comment) => (
               <motion.div
@@ -165,12 +186,13 @@ export default function ChatRoom() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className="bg-gray-50 p-4 rounded-xl"
+                className="bg-gray-50 p-4 rounded-xl w-full"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm">
-                      {comment.isAnonymous ? 'A' : 
+                      {comment.isAnonymous ? 
+                        getAnonDisplayName(comment.author.id)[0].toUpperCase() : 
                         comment.author.avatar ? (
                           <img 
                             src={comment.author.avatar} 
@@ -184,7 +206,9 @@ export default function ChatRoom() {
                     </div>
                     <div>
                       <p className="font-medium">
-                        {comment.isAnonymous ? 'Anonymous' : comment.author.username}
+                        {comment.isAnonymous 
+                          ? getAnonDisplayName(comment.author.id)
+                          : comment.author.username}
                       </p>
                       <p className="text-sm text-gray-500">
                         {comment.created_at ? new Date(comment.created_at).toLocaleString() : ''}
@@ -223,7 +247,7 @@ export default function ChatRoom() {
         </div>
 
         {/* Comment Input */}
-        <form onSubmit={handleSubmitComment}>
+        <form onSubmit={handleSubmitComment} className="w-full">
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
