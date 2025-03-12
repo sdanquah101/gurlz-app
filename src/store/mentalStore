@@ -1,0 +1,109 @@
+import { createStore } from 'zustand/vanilla';
+import { useStore } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { supabase } from '../lib/supabase';
+
+const initialState = (set, get) => ({
+  moodEntries: [],
+  isLoading: false,
+  error: null,
+
+  addMoodEntry: async (entry) => {
+    set({ isLoading: true, error: null });
+    try {
+      const user = await supabase.auth.getUser();
+      if (!user.data?.user) {
+        throw new Error('Not authenticated');
+      }
+
+      const { data, error } = await supabase
+        .from('mood_entries')
+        .insert({
+          mood: entry.mood,
+          energy: entry.energy,
+          triggers: entry.triggers,
+          note: entry.note,
+          timestamp: entry.timestamp,
+          user_id: user.data.user.id,
+        })
+        .select();
+
+      if (error) throw error;
+
+      await get().getMoodHistory(); // Ensure frontend sync
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to add mood entry',
+        isLoading: false,
+      });
+    }
+  },
+
+  getMoodHistory: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const user = await supabase.auth.getUser();
+      if (!user.data?.user) {
+        throw new Error('Not authenticated');
+      }
+
+      const { data, error } = await supabase
+        .from('mood_entries')
+        .select('*')
+        .eq('user_id', user.data.user.id)
+        .order('timestamp', { ascending: false });
+
+      if (error) throw error;
+
+      set({
+        moodEntries: data.map((entry) => ({
+          ...entry,
+          timestamp: new Date(entry.timestamp),
+        })),
+        isLoading: false,
+      });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to fetch mood history',
+        isLoading: false,
+      });
+    }
+  },
+
+  clearError: () => set({ error: null }),
+});
+
+// Create a vanilla store with persistence
+const mentalStore = createStore(
+  persist(initialState, {
+    name: 'mental-storage',
+    partialize: (state) => ({
+      moodEntries: state.moodEntries,
+    }),
+    storage: {
+      getItem: (key) => {
+        const storedValue = localStorage.getItem(key);
+        if (!storedValue) return undefined;
+
+        // Custom deserialization
+        const state = JSON.parse(storedValue);
+        if (state?.moodEntries) {
+          state.moodEntries = state.moodEntries.map((entry) => ({
+            ...entry,
+            timestamp: new Date(entry.timestamp),
+          }));
+        }
+        return state;
+      },
+      setItem: (key, value) => {
+        // Custom serialization
+        localStorage.setItem(key, value);
+      },
+      removeItem: (key) => {
+        localStorage.removeItem(key);
+      },
+    },
+  })
+);
+
+export const useMentalStore = () => useStore(mentalStore);
