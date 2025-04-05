@@ -1,0 +1,29 @@
+/* Custom styles for emoji picker */
+.emoji-mart {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.emoji-mart-scroll {
+  height: 200px !important;
+  padding: 0 6px 6px 6px;
+}
+
+.emoji-mart-search {
+  display: none;
+}
+
+.emoji-mart-category-label {
+  font-size: 0.875rem;
+  padding: 0 6px;
+  color: #6b7280;
+}
+
+.emoji-mart-emoji {
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.emoji-mart-emoji:hover {
+  background-color: #f3f4f6;
+}
