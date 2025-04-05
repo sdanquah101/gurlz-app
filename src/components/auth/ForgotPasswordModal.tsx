@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, X, ArrowRight } from 'lucide-react';
 import Button from '../common/Button';
+import { supabase } from '../../lib/supabase';
 
 interface ForgotPasswordModalProps {
   onClose: () => void;
-  onSubmit: (email: string) => Promise<void>;
 }
 
-export default function ForgotPasswordModal({ onClose, onSubmit }: ForgotPasswordModalProps) {
+export default function ForgotPasswordModal({ onClose }: ForgotPasswordModalProps) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -22,7 +22,17 @@ export default function ForgotPasswordModal({ onClose, onSubmit }: ForgotPasswor
     setError(null);
 
     try {
-      await onSubmit(email);
+      // Call Supabase directly from the frontend
+      const { data, error: supabaseError } = await supabase.auth.resetPasswordForEmail(email, {
+        // This URL must be allowed in your Supabase Auth settings under "Redirect URLs"
+        redirectTo: 'https://your-app.com/reset-password',
+      });
+
+      if (supabaseError) {
+        throw new Error(supabaseError.message);
+      }
+
+      // If successful, show the success state
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || 'Failed to send reset instructions');
@@ -44,7 +54,7 @@ export default function ForgotPasswordModal({ onClose, onSubmit }: ForgotPasswor
         animate={{ scale: 1 }}
         exit={{ scale: 0.9 }}
         className="bg-white rounded-xl p-6 max-w-md w-full"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-semibold text-primary">Reset Password</h3>
@@ -60,7 +70,10 @@ export default function ForgotPasswordModal({ onClose, onSubmit }: ForgotPasswor
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Mail
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
                 <input
                   type="email"
                   value={email}
@@ -79,11 +92,7 @@ export default function ForgotPasswordModal({ onClose, onSubmit }: ForgotPasswor
               </div>
             )}
 
-            <Button 
-              type="submit" 
-              className="w-full"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? 'Sending...' : 'Send Reset Instructions'}
             </Button>
           </form>

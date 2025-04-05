@@ -4,7 +4,7 @@ import { AuthProvider } from './components/auth/AuthProvider';
 import Layout from './components/layout/Layout';
 import LoginForm from './components/auth/LoginForm';
 import SignupForm from './components/auth/SignupForm';
-import AuthCallback from './components/auth/AuthCallback'; // Import the new component
+import AuthCallback from './components/auth/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Health from './pages/Health';
@@ -15,6 +15,9 @@ import Chat from './pages/Chat';
 import Marketplace from './pages/Marketplace'
 import SavedIdeas from './pages/SavedIdeas';
 import Notifications from './components/notifications';
+
+// 1) Import your new component:
+import ResetPassword from './pages/ResetPassword';
 
 function App() {
   return (
@@ -29,6 +32,9 @@ function App() {
 
             {/* Auth Callback Route for Email Verification */}
             <Route path="/auth/callback" element={<AuthCallback />} />
+
+            {/* Add your new Reset Password Route */}
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Main Application Routes */}
             <Route path="/dashboard" element={<Dashboard />} />
