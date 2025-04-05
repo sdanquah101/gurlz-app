@@ -10,7 +10,11 @@ export function useChat(chatId?: string) {
   const [error, setError] = useState<string | null>(null);
   const user = useAuthStore((state) => state.user);
 
+<<<<<<< HEAD
   // Define all functions before using them
+=======
+  // Format a raw message into a ChatMessage type
+>>>>>>> master
   const formatMessage = (message: any): ChatMessage => ({
     id: message.id,
     content: message.content,
@@ -40,7 +44,10 @@ export function useChat(chatId?: string) {
         message_id: chatId,
         viewer_id: user.id,
       });
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
       if (error) throw error;
     } catch (err: any) {
       console.error('Error updating view count:', err);
@@ -59,27 +66,51 @@ export function useChat(chatId?: string) {
       if (error) throw error;
 
       if (messageId === chatId && parentMessage) {
+<<<<<<< HEAD
         setParentMessage((prev) => prev ? {
           ...prev,
           likes: data.likes_count,
           likedBy: data.liked_by,
           isLiked: data.liked_by.includes(user.id),
         } : null);
+=======
+        setParentMessage((prev) =>
+          prev
+            ? {
+              ...prev,
+              likes: data.likes_count,
+              likedBy: data.liked_by,
+              isLiked: data.liked_by.includes(user.id),
+            }
+            : null
+        );
+>>>>>>> master
       } else {
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === messageId
               ? {
+<<<<<<< HEAD
                   ...msg,
                   likes: data.likes_count,
                   likedBy: data.liked_by,
                   isLiked: data.liked_by.includes(user.id),
                 }
+=======
+                ...msg,
+                likes: data.likes_count,
+                likedBy: data.liked_by,
+                isLiked: data.liked_by.includes(user.id),
+              }
+>>>>>>> master
               : msg
           )
         );
       }
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
       return true;
     } catch (err: any) {
       console.error('Error toggling like:', err);
@@ -109,14 +140,49 @@ export function useChat(chatId?: string) {
       return false;
     }
   };
+<<<<<<< HEAD
   const sendMessage = async (
     content: string, 
     isAnonymous = false, 
+=======
+
+  // New function: reportMessage
+  const reportMessage = async (messageId: string, reason: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from('community_reports')
+        .insert([
+          {
+            message_id: messageId,
+            reporter_id: user.id,
+            reason,
+          },
+        ]);
+
+      if (error) throw error;
+      return true;
+    } catch (err: any) {
+      console.error('Error reporting message:', err);
+      setError(err?.message || 'Failed to report message');
+      return false;
+    }
+  };
+
+  const sendMessage = async (
+    content: string,
+    isAnonymous = false,
+>>>>>>> master
     isSuitableForMinors = true // Add default value
   ): Promise<boolean> => {
     if (!user) return false;
     setLoading(true);
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> master
     try {
       const { data: message, error: messageError } = await supabase
         .from('chat_messages')
@@ -128,7 +194,10 @@ export function useChat(chatId?: string) {
           is_suitable_for_minors: isSuitableForMinors,
           liked_by: [],
         })
+<<<<<<< HEAD
         
+=======
+>>>>>>> master
         .select(
           `
           *,
@@ -148,9 +217,15 @@ export function useChat(chatId?: string) {
 
       // If this is a reply to a parent message, update the replies_count in the parent message
       if (chatId && parentMessage) {
+<<<<<<< HEAD
         setParentMessage(prev => ({
           ...prev!,
           replies_count: (prev?.replies_count || 0) + 1
+=======
+        setParentMessage((prev) => ({
+          ...prev!,
+          replies_count: (prev?.replies_count || 0) + 1,
+>>>>>>> master
         }));
       }
 
@@ -171,7 +246,11 @@ export function useChat(chatId?: string) {
       return;
     }
     setLoading(true);
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> master
     try {
       if (chatId) {
         // Fetch specific chat and its comments
@@ -235,7 +314,10 @@ export function useChat(chatId?: string) {
         if (error) throw error;
         setMessages((data || []).map(formatMessage));
       }
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
       setError(null);
     } catch (err: any) {
       console.error('Error fetching messages:', err);
@@ -261,18 +343,34 @@ export function useChat(chatId?: string) {
         },
         (payload) => {
           console.log('Received real-time update:', payload);
+<<<<<<< HEAD
           
+=======
+
+>>>>>>> master
           if (payload.eventType === 'INSERT') {
             if (chatId) {
               if (payload.new.parent_id === chatId) {
                 const newMessage = formatMessage(payload.new);
                 setMessages((prev) => [newMessage, ...prev]);
+<<<<<<< HEAD
                 
                 // Update parent message replies count
                 setParentMessage(prev => prev ? {
                   ...prev,
                   replies_count: (prev.replies_count || 0) + 1
                 } : null);
+=======
+                // Update parent message replies count
+                setParentMessage((prev) =>
+                  prev
+                    ? {
+                      ...prev,
+                      replies_count: (prev.replies_count || 0) + 1,
+                    }
+                    : null
+                );
+>>>>>>> master
               }
             } else if (!payload.new.parent_id) {
               const newMessage = formatMessage(payload.new);
@@ -280,6 +378,7 @@ export function useChat(chatId?: string) {
             }
           } else if (payload.eventType === 'DELETE') {
             setMessages((prev) => prev.filter((msg) => msg.id !== payload.old.id));
+<<<<<<< HEAD
             
             // If a message was deleted and it was a reply to our current parent, decrement the count
             if (chatId && payload.old.parent_id === chatId) {
@@ -287,16 +386,34 @@ export function useChat(chatId?: string) {
                 ...prev,
                 replies_count: Math.max(0, (prev.replies_count || 0) - 1)
               } : null);
+=======
+            // If a message was deleted and it was a reply to our current parent, decrement the count
+            if (chatId && payload.old.parent_id === chatId) {
+              setParentMessage((prev) =>
+                prev
+                  ? {
+                    ...prev,
+                    replies_count: Math.max(0, (prev.replies_count || 0) - 1),
+                  }
+                  : null
+              );
+>>>>>>> master
             }
           } else if (payload.eventType === 'UPDATE') {
             setMessages((prev) =>
               prev.map((msg) =>
+<<<<<<< HEAD
                 msg.id === payload.new.id
                   ? formatMessage(payload.new)
                   : msg
               )
             );
             
+=======
+                msg.id === payload.new.id ? formatMessage(payload.new) : msg
+              )
+            );
+>>>>>>> master
             // If our parent message was updated, update it
             if (chatId && payload.new.id === chatId) {
               setParentMessage(formatMessage(payload.new));
@@ -326,5 +443,11 @@ export function useChat(chatId?: string) {
     fetchMessages,
     toggleLike,
     deleteMessage,
+<<<<<<< HEAD
   };
 }
+=======
+    reportMessage,
+  };
+}
+>>>>>>> master

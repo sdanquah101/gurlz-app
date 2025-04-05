@@ -2,16 +2,26 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Users, Heart, Crown } from 'lucide-react';
 import { usePresence } from '../../hooks/usePresence';
+<<<<<<< HEAD
 import { useTrendingTopics } from '../../hooks/useTrendingTopics';
+=======
+>>>>>>> master
 import { useDailyQuote } from '../../hooks/useDailyQuote';
 
 export default function StatsCard() {
   const { onlineStats } = usePresence();
+<<<<<<< HEAD
   const { trendingTopics } = useTrendingTopics();
+=======
+>>>>>>> master
   const { quote } = useDailyQuote();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+<<<<<<< HEAD
+=======
+      {/* 1. Users Online Card */}
+>>>>>>> master
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -26,6 +36,10 @@ export default function StatsCard() {
         </div>
       </motion.div>
 
+<<<<<<< HEAD
+=======
+      {/* 2. Play Game Button (replaces Trending Topic) */}
+>>>>>>> master
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -34,15 +48,31 @@ export default function StatsCard() {
       >
         <div className="flex items-center justify-between">
           <div>
+<<<<<<< HEAD
             <p className="text-sm font-medium">Trending Topic</p>
             <h3 className="text-lg font-bold">
               {trendingTopics?.[0]?.topic || 'Wellness'}
             </h3>
+=======
+            <p className="text-sm font-medium">Play Game</p>
+            <a
+              href="/GirlRacer.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-lg font-bold hover:underline"
+            >
+              Start Now
+            </a>
+>>>>>>> master
           </div>
           <Heart size={32} className="text-primary-dark" />
         </div>
       </motion.div>
 
+<<<<<<< HEAD
+=======
+      {/* 3. Quote of the Day Card */}
+>>>>>>> master
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -61,4 +91,8 @@ export default function StatsCard() {
       </motion.div>
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> master

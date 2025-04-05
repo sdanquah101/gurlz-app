@@ -100,7 +100,11 @@ const Health: React.FC = () => {
       {error && (
         <div className="bg-red-50 p-3 md:p-4 rounded-lg text-red-700 mb-3 md:mb-4">
           <p>Error: {error}</p>
+<<<<<<< HEAD
           <button 
+=======
+          <button
+>>>>>>> master
             className="underline mt-2"
             onClick={() => fetchCycles()}
           >
@@ -129,7 +133,11 @@ const Health: React.FC = () => {
 
         {/* Tracker Section */}
         <div>
+<<<<<<< HEAD
           <SymptomTracker 
+=======
+          <SymptomTracker
+>>>>>>> master
             selectedDate={state.selectedDate}
             onLogSymptom={(symptomData) => {
               // Implement your symptom logging logic here
@@ -137,7 +145,11 @@ const Health: React.FC = () => {
             }}
           />
         </div>
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> master
       </div>
 
       {/* Side Panel */}

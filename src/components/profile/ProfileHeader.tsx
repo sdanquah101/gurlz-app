@@ -145,6 +145,7 @@ export default function ProfileHeader({ userId, onUpdateProfile }: ProfileHeader
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 break-words max-w-full">
                 {profileUser.username}
               </h2>
+<<<<<<< HEAD
               {profileUser.email && (
                 <p className="text-sm sm:text-base text-gray-500 break-words max-w-full">
                   {profileUser.email}
@@ -152,6 +153,15 @@ export default function ProfileHeader({ userId, onUpdateProfile }: ProfileHeader
               )}
             </div>
             
+=======
+              {/* profileUser.email && (
+                <p className="text-sm sm:text-base text-gray-500 break-words max-w-full">
+                  {profileUser.email}
+                </p>
+              )} */}
+            </div>
+
+>>>>>>> master
             {/* Edit button - Mobile optimization */}
             {isOwnProfile && (
               <div className="mt-2 sm:mt-0">
@@ -178,7 +188,11 @@ export default function ProfileHeader({ userId, onUpdateProfile }: ProfileHeader
           {/* Location - Adjusted for mobile */}
           {profileUser.country && (
             <div className="flex items-center justify-center md:justify-start space-x-2 mt-3 text-xs sm:text-sm text-gray-500">
+<<<<<<< HEAD
               <MapPin size={14} className="sm:size-16" aria-hidden="true" />
+=======
+              <MapPin size={2} className="sm:size-16" aria-hidden="true" />
+>>>>>>> master
               <span>{profileUser.country}</span>
             </div>
           )}

@@ -28,7 +28,12 @@ export default function ChatList() {
     error,
     sendMessage: sendChatMessage,
     deleteMessage: deleteChatMessage,
+<<<<<<< HEAD
     toggleLike
+=======
+    toggleLike,
+    reportMessage  // Destructure the new report function
+>>>>>>> master
   } = useChat();
 
   // Local state for filters
@@ -67,7 +72,10 @@ export default function ChatList() {
     if (!user) return;
     await sendChatMessage(content, isAnonymous, isSuitableForMinors);
   }, [user, sendChatMessage]);
+<<<<<<< HEAD
   
+=======
+>>>>>>> master
 
   // Handle liking a message
   const handleLike = useCallback(async (messageId: string) => {
@@ -85,11 +93,31 @@ export default function ChatList() {
     }
   }, [deleteChatMessage]);
 
+<<<<<<< HEAD
+=======
+  // Handle reporting a message
+  const handleReport = useCallback(async (messageId: string) => {
+    const reason = window.prompt('Please provide a reason for reporting this message:');
+    if (!reason) return; // Exit if the user cancels or does not provide a reason
+
+    try {
+      await reportMessage(messageId, reason);
+      alert('Thank you for your report. Our moderators will review it shortly.');
+    } catch (error) {
+      alert('There was an error reporting the message. Please try again later.');
+    }
+  }, [reportMessage]);
+
+>>>>>>> master
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="bg-gradient-to-r from-primary to-primary-dark text-white p-8 rounded-3xl">
+<<<<<<< HEAD
         <h1 className="text-3xl font-bold mb-4">Girls' Chatroom</h1>
+=======
+        <h1 className="text-3xl font-bold mb-4">Gurlz Chatroom</h1>
+>>>>>>> master
         <p className="text-secondary-light/90">
           Explore stories, engage with others, and have fun!
         </p>
@@ -142,6 +170,10 @@ export default function ChatList() {
                       ? () => handleDelete(message.id)
                       : undefined
                   }
+<<<<<<< HEAD
+=======
+                  onReport={() => handleReport(message.id)}  // Added report handler
+>>>>>>> master
                 />
               </motion.div>
             ))}
@@ -169,4 +201,8 @@ export default function ChatList() {
       )}
     </div>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> master

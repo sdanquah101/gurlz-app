@@ -1,7 +1,12 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+<<<<<<< HEAD
 import { 
   Home, 
+=======
+import {
+  Home,
+>>>>>>> master
   MessageCircle,
   Calendar,
   Activity,
@@ -23,10 +28,16 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = React.useState(false);
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+<<<<<<< HEAD
   
   // Remove any scroll-based visibility behavior
   React.useEffect(() => {
     // This ensures the menu button is always visible regardless of scroll position
+=======
+
+  React.useEffect(() => {
+    // Force the menu button to remain visible (no scroll-based hiding)
+>>>>>>> master
     const handleScroll = () => {
       const menuButton = document.getElementById('mobile-menu-button');
       if (menuButton) {
@@ -34,6 +45,7 @@ export default function Navigation() {
         menuButton.style.visibility = 'visible';
       }
     };
+<<<<<<< HEAD
     
     // Add scroll listener
     window.addEventListener('scroll', handleScroll);
@@ -41,6 +53,11 @@ export default function Navigation() {
     handleScroll();
     
     // Clean up
+=======
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+>>>>>>> master
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -59,17 +76,26 @@ export default function Navigation() {
 
   return (
     <>
+<<<<<<< HEAD
       {/* Mobile Menu Button - Always visible */}
       <button 
         id="mobile-menu-button"
         onClick={() => setIsOpen(!isOpen)}
         className="fixed top-4 left-4 z-50 p-2 rounded-full bg-primary text-white md:hidden hover:bg-primary-dark shadow-md opacity-100 transition-none"
         style={{ visibility: 'visible' }}
+=======
+      {/* Mobile Menu Button */}
+      <button
+        id="mobile-menu-button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed top-4 left-4 z-50 p-2 rounded-full bg-primary text-white md:hidden hover:bg-primary-dark shadow-md"
+>>>>>>> master
         aria-label="Toggle menu"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
+<<<<<<< HEAD
       {/* Overlay - Modified to not cover the navigation menu */}
       {isOpen && (
         <div 
@@ -79,12 +105,28 @@ export default function Navigation() {
       )}
 
       {/* Navigation Menu - Increased z-index */}
+=======
+      {/* Overlay: remove `right-64` so it covers the entire screen */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsOpen(false)}
+          aria-label="Close menu overlay"
+        />
+      )}
+
+      {/* Navigation Menu */}
+>>>>>>> master
       <nav className={`
         fixed inset-y-0 left-0 w-64 bg-gradient-to-b from-primary to-primary-dark text-white
         transform transition-transform duration-300 ease-in-out z-50
         ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
+<<<<<<< HEAD
+=======
+          {/* Top Section */}
+>>>>>>> master
           <div className="p-6 border-b border-primary-light/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -103,15 +145,24 @@ export default function Navigation() {
             </div>
 
             {user && (
+<<<<<<< HEAD
               <button 
+=======
+              <button
+>>>>>>> master
                 onClick={() => handleNavigation('/profile')}
                 className="mt-6 w-full flex items-center space-x-4 hover:bg-primary-light/20 p-3 rounded-lg transition-colors"
                 aria-label="View profile"
               >
                 <div className="w-16 h-16 rounded-full bg-secondary-dark text-primary-dark flex items-center justify-center font-semibold overflow-hidden flex-shrink-0">
                   {user.profileImage ? (
+<<<<<<< HEAD
                     <img 
                       src={user.profileImage} 
+=======
+                    <img
+                      src={user.profileImage}
+>>>>>>> master
                       alt={user.username}
                       className="w-full h-full object-cover"
                     />
@@ -127,6 +178,10 @@ export default function Navigation() {
             )}
           </div>
 
+<<<<<<< HEAD
+=======
+          {/* Main Navigation */}
+>>>>>>> master
           <div className="flex-1 p-4 space-y-2 overflow-y-auto">
             <NavItem onClick={() => handleNavigation('/dashboard')} icon={Home} label="Home" isActive={isActive('/dashboard')} />
             <NavItem onClick={() => handleNavigation('/profile')} icon={UserCircle2} label="Profile" isActive={isActive('/profile')} />
@@ -138,6 +193,10 @@ export default function Navigation() {
             <NavItem onClick={() => handleNavigation('/marketplace')} icon={ShoppingBag} label="Marketplace" isActive={isActive('/marketplace')} />
           </div>
 
+<<<<<<< HEAD
+=======
+          {/* Footer / Sign Out */}
+>>>>>>> master
           <div className="p-4 border-t border-primary-light/20">
             <button
               onClick={handleSignOut}
@@ -178,4 +237,8 @@ function NavItem({ icon: Icon, label, isActive, onClick }: NavItemProps) {
       <span>{label}</span>
     </button>
   );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> master

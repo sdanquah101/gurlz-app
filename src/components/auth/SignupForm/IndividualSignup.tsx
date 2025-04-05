@@ -28,11 +28,19 @@ export default function IndividualSignup() {
 
   const handleFieldChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+<<<<<<< HEAD
     
     // Clear field-specific error when user changes that field
     if (fieldErrors[field]) {
       setFieldErrors(prev => {
         const updated = {...prev};
+=======
+
+    // Clear field-specific error when user changes that field
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => {
+        const updated = { ...prev };
+>>>>>>> master
         delete updated[field];
         return updated;
       });
@@ -41,28 +49,48 @@ export default function IndividualSignup() {
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> master
     // Validate required fields
     if (!formData.username.trim()) {
       newErrors.username = 'Username is required';
     }
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> master
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> master
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
+<<<<<<< HEAD
     
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
     
+=======
+
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+>>>>>>> master
     // Validate age group against allowed values from DB constraint
     const validAgeGroups = ['12-18', '19-25', '26-30', '31-35', '35+'];
     if (!formData.ageGroup) {
@@ -71,7 +99,11 @@ export default function IndividualSignup() {
       newErrors.ageGroup = 'Please select a valid age group';
       console.error(`Invalid age group: "${formData.ageGroup}". Valid options are: ${validAgeGroups.join(', ')}`);
     }
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> master
     setFieldErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -79,7 +111,11 @@ export default function IndividualSignup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> master
     // Validate form before submission
     if (!validateForm()) {
       setError('Please correct the errors before continuing');
@@ -107,10 +143,17 @@ export default function IndividualSignup() {
     } catch (err: any) {
       console.error('Signup error:', err);
       setError(err.message);
+<<<<<<< HEAD
       
       // Handle specific errors from backend
       if (err.message.includes('age group')) {
         setFieldErrors(prev => ({...prev, ageGroup: 'Valid age group is required'}));
+=======
+
+      // Handle specific errors from backend
+      if (err.message.includes('age group')) {
+        setFieldErrors(prev => ({ ...prev, ageGroup: 'Valid age group is required' }));
+>>>>>>> master
       }
     }
   };
@@ -121,7 +164,11 @@ export default function IndividualSignup() {
       // Move to email confirmation step
       setStep(3);
     } else {
+<<<<<<< HEAD
       setError('Face verification failed. Please try again.');
+=======
+      setError('');
+>>>>>>> master
       // Don't go back to step 1, just stay on verification step to retry
     }
   };
@@ -155,8 +202,13 @@ export default function IndividualSignup() {
                 disabled={loading}
                 errors={fieldErrors}
               />
+<<<<<<< HEAD
               <Button 
                 type="submit" 
+=======
+              <Button
+                type="submit"
+>>>>>>> master
                 className="w-full"
                 disabled={loading}
               >
@@ -188,6 +240,7 @@ export default function IndividualSignup() {
           >
             <h2 className="text-2xl font-semibold mb-4">Account Setup Complete!</h2>
             <p className="mb-6">
+<<<<<<< HEAD
               We've sent a confirmation email to <span className="font-medium">{formData.email}</span>. 
               Please check your inbox and click the link to verify your email address.
             </p>
@@ -200,6 +253,20 @@ export default function IndividualSignup() {
               </p>
             </div>
             
+=======
+              We've sent a confirmation email to <span className="font-medium">{formData.email}</span>.
+              Please check your inbox and click the link to verify your email address.
+            </p>
+
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 mb-6">
+              <h3 className="font-medium text-amber-800 mb-2">Important:</h3>
+              <p className="text-amber-700 text-sm">
+                Your account won't be activated until you verify your email.
+                The verification link is only valid for 24 hours.
+              </p>
+            </div>
+
+>>>>>>> master
             <div className="p-4 bg-blue-50 rounded-lg mb-6">
               <h3 className="font-medium text-blue-800 mb-2">Next steps:</h3>
               <ul className="text-sm text-blue-700 text-left">
@@ -210,7 +277,11 @@ export default function IndividualSignup() {
               </ul>
             </div>
             <div className="space-y-4">
+<<<<<<< HEAD
               <Button 
+=======
+              <Button
+>>>>>>> master
                 onClick={() => navigate('/login')}
                 className="w-full"
               >

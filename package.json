@@ -29,11 +29,22 @@
     "react-webcam": "^7.2.0",
     "socket.io-client": "^4.7.4",
     "styled-components": "^6.1.14",
+<<<<<<< HEAD
+=======
+    "three": "^0.175.0",
+>>>>>>> master
     "uuid": "^11.0.4",
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+<<<<<<< HEAD
     "@types/styled-components": "^5.1.34",
+=======
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.1",
+    "@types/styled-components": "^5.1.34",
+    "@types/three": "^0.175.0",
+>>>>>>> master
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "@vitejs/plugin-react": "^4.2.1",

@@ -67,11 +67,19 @@ export default function FeaturedSections() {
               <div className="flex items-center space-x-4">
                 <img
                   src="https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=200"
+<<<<<<< HEAD
                   alt="Fashion & Style"
                   className="w-24 h-24 rounded-xl object-cover"
                 />
                 <div>
                   <h3 className="text-lg font-semibold text-primary mb-2">Fashion & Style</h3>
+=======
+                  alt="Gurlture"
+                  className="w-24 h-24 rounded-xl object-cover"
+                />
+                <div>
+                  <h3 className="text-lg font-semibold text-primary mb-2">Gurlture!</h3>
+>>>>>>> master
                   <p className="text-gray-600">Discover your unique style and elegance</p>
                 </div>
               </div>
