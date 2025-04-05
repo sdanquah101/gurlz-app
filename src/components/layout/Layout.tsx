@@ -14,10 +14,12 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [showCart, setShowCart] = useState(false);
-  const { isAuthenticated, user } = useAuthStore();
-  const isAuthPage = ['/login', '/signup', '/'].includes(location.pathname);
+  const { isAuthenticated } = useAuthStore();
 
-  // Modified auth check to prevent redirect loops
+  // Mark these routes as public so that the user isn't redirected
+  const isAuthPage = ['/login', '/signup', '/', '/reset-password'].includes(location.pathname);
+
+  // Check authentication status on path change
   useEffect(() => {
     const checkAuth = async () => {
       if (!isAuthenticated && !isAuthPage) {
@@ -26,13 +28,14 @@ export default function Layout({ children }: LayoutProps) {
     };
 
     checkAuth();
-  }, [location.pathname]); // Only check on path change
+  }, [location.pathname, isAuthenticated, isAuthPage, navigate]);
 
   const handleCheckout = () => {
     setShowCart(false);
     navigate('/marketplace/checkout');
   };
 
+  // If we're on a public page (auth pages), render without additional navigation/layout chrome
   if (isAuthPage) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-secondary to-secondary-dark">
@@ -46,7 +49,7 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex">
         <Navigation />
         <main className="flex-1 md:ml-64">
-          {/* Top Bar - Higher z-index than navigation */}
+          {/* Top Bar */}
           <div className="bg-white shadow-sm p-4 flex items-center justify-between relative z-40">
             <div className="flex items-center space-x-2">
               <Heart className="text-primary w-6 h-6" />
@@ -54,7 +57,7 @@ export default function Layout({ children }: LayoutProps) {
             </div>
             <CartButton onClick={() => setShowCart(true)} />
           </div>
-          
+
           <div className="p-6">
             <div className="max-w-7xl mx-auto">
               {children}
@@ -63,7 +66,7 @@ export default function Layout({ children }: LayoutProps) {
         </main>
       </div>
 
-      {/* Cart Drawer - Highest z-index */}
+      {/* Cart Drawer */}
       <CartDrawer
         isOpen={showCart}
         onClose={() => setShowCart(false)}
