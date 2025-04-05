@@ -341,6 +341,33 @@
             transition: width 0.5s ease;
             z-index: 25;
         }
+
+        /* Mobile controls for touch screen */
+        #mobileControls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        #mobileControls button {
+            background: #ff69b4;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            color: white;
+            opacity: 0.7;
+            outline: none;
+        }
+
+        #mobileControls button:active {
+            opacity: 1;
+        }
     </style>
 </head>
 
@@ -449,6 +476,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Mobile Controls for Touch Screen -->
+    <div id="mobileControls"></div>
 
     <script>
         // Global variables
@@ -1600,9 +1630,65 @@
             }
         }
 
+        // Mobile controls: Create on-screen buttons and add touch events
+        function addMobileControls() {
+            if (document.getElementById("mobileControls").innerHTML.trim() !== "") return;
+            const mobileControls = document.getElementById("mobileControls");
+            mobileControls.innerHTML = `
+        <button id="leftBtn">&#8592;</button>
+        <button id="powerUpBtn">&#128165;</button>
+        <button id="rightBtn">&#8594;</button>
+    `;
+
+            function addButtonEvents(btn, keyName) {
+                btn.addEventListener("touchstart", function (e) {
+                    e.preventDefault();
+                    keys[keyName] = true;
+                });
+                btn.addEventListener("touchend", function (e) {
+                    e.preventDefault();
+                    keys[keyName] = false;
+                });
+                btn.addEventListener("pointerdown", function (e) {
+                    e.preventDefault();
+                    keys[keyName] = true;
+                });
+                btn.addEventListener("pointerup", function (e) {
+                    e.preventDefault();
+                    keys[keyName] = false;
+                });
+                btn.addEventListener("pointerout", function (e) {
+                    e.preventDefault();
+                    keys[keyName] = false;
+                });
+            }
+
+            const leftBtn = document.getElementById("leftBtn");
+            const rightBtn = document.getElementById("rightBtn");
+            const powerUpBtn = document.getElementById("powerUpBtn");
+
+            addButtonEvents(leftBtn, "ArrowLeft");
+            addButtonEvents(rightBtn, "ArrowRight");
+
+            powerUpBtn.addEventListener("touchstart", function (e) {
+                e.preventDefault();
+                if (gameRunning) {
+                    activateRandomPowerUp();
+                }
+            });
+            powerUpBtn.addEventListener("pointerdown", function (e) {
+                e.preventDefault();
+                if (gameRunning) {
+                    activateRandomPowerUp();
+                }
+            });
+        }
+
+
         // On DOM load
         window.addEventListener("DOMContentLoaded", () => {
             init();
+            addMobileControls();
 
             // Start button
             document.getElementById("startButton").addEventListener("click", () => {

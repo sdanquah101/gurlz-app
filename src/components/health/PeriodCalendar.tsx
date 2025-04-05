@@ -42,7 +42,8 @@ const Modal = ({ isOpen, onClose, children }) => {
         onClick={(e) => e.stopPropagation()}
         style={{
           transform: isOpen ? 'translateY(0)' : 'translateY(20px)',
-          boxShadow: '0 10px 25px -5px rgba(0, 128, 128, 0.2), 0 10px 10px -5px rgba(0, 128, 128, 0.1)'
+          boxShadow:
+            '0 10px 25px -5px rgba(0, 128, 128, 0.2), 0 10px 10px -5px rgba(0, 128, 128, 0.1)',
         }}
       >
         {children}
@@ -56,9 +57,7 @@ const AnimatedButton = ({ children, onClick, className = '', disabled = false })
     onClick={disabled ? undefined : onClick}
     className={`${className} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:scale-105'
       } transition-all duration-200`}
-    style={{
-      transform: disabled ? 'none' : undefined,
-    }}
+    style={{ transform: disabled ? 'none' : undefined }}
   >
     {children}
   </button>
@@ -98,22 +97,40 @@ const PeriodCalendar = ({
     return cycles.length > 0 && predictions && predictions.predictions;
   };
 
-  // Populate tempSelectedDates from existing cycles whenever modal opens
+  // When the modal opens, prepopulate tempSelectedDates with the union of days
+  // from all cycles that intersect the modal month.
   useEffect(() => {
     if (isModalOpen) {
+      const modalStart = startOfMonth(modalMonth);
+      const modalEnd = endOfMonth(modalMonth);
       const allCycleDays = [];
       cycles.forEach((cycle) => {
-        const start = new Date(cycle.startDate);
-        const end = new Date(cycle.endDate);
-        eachDayOfInterval({ start, end }).forEach((d) => {
-          allCycleDays.push(d);
-        });
+        const cycleStart = new Date(cycle.startDate);
+        const cycleEnd = new Date(cycle.endDate);
+        // Check for intersection between the cycle and the modal month.
+        if (
+          isWithinInterval(cycleStart, { start: modalStart, end: modalEnd }) ||
+          isWithinInterval(cycleEnd, { start: modalStart, end: modalEnd }) ||
+          (cycleStart <= modalStart && cycleEnd >= modalEnd)
+        ) {
+          // Add all days of the cycle that fall in the modal month.
+          const intersectionStart = cycleStart < modalStart ? modalStart : cycleStart;
+          const intersectionEnd = cycleEnd > modalEnd ? modalEnd : cycleEnd;
+          eachDayOfInterval({ start: intersectionStart, end: intersectionEnd }).forEach((d) => {
+            allCycleDays.push(d);
+          });
+        }
       });
-      setTempSelectedDates(allCycleDays);
+      // Remove duplicates and sort.
+      const uniqueDates = Array.from(
+        new Set(allCycleDays.map((d) => d.toISOString()))
+      ).map((iso) => new Date(iso));
+      uniqueDates.sort((a, b) => a.getTime() - b.getTime());
+      setTempSelectedDates(uniqueDates);
     }
-  }, [isModalOpen, cycles]);
+  }, [isModalOpen, cycles, modalMonth]);
 
-  // Utility: see if a date is in any logged period
+  // Utility: Check if a date is within any logged period.
   const isDateInPeriod = (date) => {
     return cycles.some((cycle) =>
       isWithinInterval(date, {
@@ -123,7 +140,7 @@ const PeriodCalendar = ({
     );
   };
 
-  // Determine date "status" for styling
+  // Determine date status for styling.
   const getDateStatus = (date) => {
     if (isDateInPeriod(date)) {
       return 'period';
@@ -135,8 +152,6 @@ const PeriodCalendar = ({
         estimatedOvulationDate,
         fertileWindow,
       } = predictions.predictions;
-
-      // predicted period
       if (
         predictedNextPeriodStart &&
         predictedNextPeriodEnd &&
@@ -147,14 +162,12 @@ const PeriodCalendar = ({
       ) {
         return 'predicted-period';
       }
-      // ovulation
       if (
         estimatedOvulationDate &&
         isSameDay(date, new Date(estimatedOvulationDate))
       ) {
         return 'ovulation';
       }
-      // fertile window
       if (
         fertileWindow &&
         isWithinInterval(date, {
@@ -168,22 +181,17 @@ const PeriodCalendar = ({
     return 'regular';
   };
 
-  // Build array of days for the monthly calendar
+  // Build array of days for a given month.
   const getDaysInMonth = (date) => {
     const firstDay = startOfMonth(date);
     const lastDay = endOfMonth(date);
     const firstDayOfWeek = getDay(firstDay);
-
     const daysWithOffset = [];
-    // offset from the previous month
     for (let i = 0; i < firstDayOfWeek; i++) {
       daysWithOffset.push(add(firstDay, { days: -firstDayOfWeek + i }));
     }
-    // days in current month
     const daysInMonth = eachDayOfInterval({ start: firstDay, end: lastDay });
     daysWithOffset.push(...daysInMonth);
-
-    // fill to 42 cells (6 rows * 7 columns)
     const totalDaysToShow = 42;
     const needed = totalDaysToShow - daysWithOffset.length;
     for (let i = 1; i <= needed; i++) {
@@ -192,47 +200,31 @@ const PeriodCalendar = ({
     return daysWithOffset;
   };
 
-  // Toggle date selection in modal
+  // Toggle date selection in modal.
   const isDateSelected = (date) =>
     tempSelectedDates.some((selectedDay) => isSameDay(selectedDay, date));
 
-
   const toggleDateSelection = (date) => {
-    const alreadySelected = isDateSelected(date);
-    if (alreadySelected) {
+    if (isDateSelected(date)) {
       setTempSelectedDates(tempSelectedDates.filter((d) => !isSameDay(d, date)));
     } else {
-      // If no days selected, auto-select 5 consecutive days
-      if (tempSelectedDates.length === 0) {
-        const fiveDays = [];
-        for (let i = 0; i < 5; i++) {
-          fiveDays.push(add(date, { days: i }));
-        }
-        setTempSelectedDates([...tempSelectedDates, ...fiveDays]);
-      } else {
-        setTempSelectedDates([...tempSelectedDates, date]);
+      // Always add the clicked date plus the next 4 days.
+      const fiveDays = [];
+      for (let i = 0; i < 5; i++) {
+        fiveDays.push(add(date, { days: i }));
       }
+      setTempSelectedDates([...tempSelectedDates, ...fiveDays]);
     }
   };
 
-  // Saving period in modal
+  // Modified save handler: Pass the entire sorted selection and modalMonth.
   const handleSavePeriod = () => {
-    if (tempSelectedDates.length === 0) {
-      const confirmClear = window.confirm(
-        'No days selected. This will remove any existing period data for this month. Proceed?'
-      );
-      if (!confirmClear) return;
-    }
-    // Sort the dates in case they're not in order
     const sortedDates = tempSelectedDates.sort((a, b) => a.getTime() - b.getTime());
-    const startDate = sortedDates[0];
-    const endDate = sortedDates[sortedDates.length - 1];
-    onLogPeriod(startDate, endDate);
+    onLogPeriod(sortedDates, modalMonth);
     setIsModalOpen(false);
   };
 
-
-  // Logic for timeline (phase, etc.)
+  // Timeline logic.
   const getCurrentCycleInfo = () => {
     if (
       !shouldShowPredictions() ||
@@ -246,11 +238,9 @@ const PeriodCalendar = ({
         phaseDay: 1,
       };
     }
-
     const today = new Date();
     const nextPeriod = new Date(predictions.predictions.predictedNextPeriodStart);
     const lastCycle = cycles[cycles.length - 1];
-
     if (!lastCycle) {
       return {
         currentDay: 1,
@@ -260,15 +250,12 @@ const PeriodCalendar = ({
         phaseDay: 1,
       };
     }
-
     const lastPeriodEnd = new Date(lastCycle.endDate);
     const cycleLength =
       differenceInDays(nextPeriod, lastPeriodEnd) + lastCycle.length;
     const daysSinceLastPeriod = differenceInDays(today, lastPeriodEnd);
-
     let phase = 'unknown';
     let phaseDay = 1;
-
     if (isDateInPeriod(today)) {
       phase = 'menstrual';
       const currentPeriod = cycles.find((cycle) =>
@@ -306,7 +293,6 @@ const PeriodCalendar = ({
       phaseDay = 14 - daysUntilNextPeriod;
       if (phaseDay < 1) phaseDay = 1;
     }
-
     return {
       currentDay: cycleLength - differenceInDays(nextPeriod, today),
       cycleLength,
@@ -318,7 +304,7 @@ const PeriodCalendar = ({
 
   const cycleInfo = getCurrentCycleInfo();
 
-  // Icons for timeline phases
+  // Icons for timeline phases.
   const getPhaseIcon = (phase) => {
     switch (phase) {
       case 'menstrual':
@@ -370,18 +356,16 @@ const PeriodCalendar = ({
     }
   };
 
-  // Additional styling for each day in the main calendar
+  // Styling for each day in the main calendar.
   const getDayClass = (day, status) => {
     const isSelectedInMain = isSameDay(day, selectedDate);
     const inCurrentMonth = isSameMonth(day, currentMonth);
     const today = isToday(day);
-
     let base =
       'relative flex flex-col items-center justify-center rounded-full transition-all duration-200';
     let size = 'w-10 h-10 sm:w-11 sm:h-11';
     let text = today ? 'font-bold text-sm' : 'font-medium text-sm';
     let fade = inCurrentMonth ? '' : 'opacity-40';
-
     let statusClass =
       'hover:bg-teal-100 text-teal-900 transform hover:scale-105 ease-out';
     switch (status) {
@@ -401,26 +385,21 @@ const PeriodCalendar = ({
           'bg-gradient-to-r from-purple-400 to-purple-300 text-purple-900 shadow-sm';
         break;
       default:
-        // default teal text
         break;
     }
-
     const ring = isSelectedInMain ? 'ring-2 ring-teal-500 ring-offset-1' : '';
-
     return `${base} ${size} ${text} ${fade} ${statusClass} ${ring}`;
   };
 
-
-
-  // Build arrays for main & modal calendars
+  // Build arrays for main and modal calendars.
   const days = getDaysInMonth(currentMonth);
   const modalDays = getDaysInMonth(modalMonth);
 
   return (
     <>
-      {/* Main container with glassy teal styling */}
-      <div className="bg-gradient-to-br from-teal-50 to-teal-100 backdrop-blur-md border border-teal-200  shadow-lg overflow-hidden">
-        {/* Header with glassy teal styling */}
+      {/* Main container */}
+      <div className="bg-gradient-to-br from-teal-50 to-teal-100 backdrop-blur-md border border-teal-200 shadow-lg overflow-hidden">
+        {/* Header */}
         <div className="bg-gradient-to-r from-primary to-primary-dark text-white p-4 md:p-8 md:rounded-t-2xl">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold">Your Period Tracker</h2>
@@ -428,8 +407,8 @@ const PeriodCalendar = ({
               <AnimatedButton
                 onClick={() => setActiveTab('calendar')}
                 className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${activeTab === 'calendar'
-                  ? 'bg-teal-600/50 text-white hover:bg-teal-600/70'
-                  : 'text-white shadow-md'
+                    ? 'bg-teal-600/50 text-white hover:bg-teal-600/70'
+                    : 'text-white shadow-md'
                   }`}
               >
                 Calendar
@@ -437,15 +416,14 @@ const PeriodCalendar = ({
               <AnimatedButton
                 onClick={() => setActiveTab('timeline')}
                 className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${activeTab === 'timeline'
-                  ? 'bg-teal-600/50 text-white hover:bg-teal-600/70'
-                  : 'text-white shadow-md'
+                    ? 'bg-teal-600/50 text-white hover:bg-teal-600/70'
+                    : 'text-white shadow-md'
                   }`}
               >
                 Timeline
               </AnimatedButton>
             </div>
           </div>
-
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
               <AnimatedButton
@@ -464,7 +442,6 @@ const PeriodCalendar = ({
                 <ChevronRight size={20} />
               </AnimatedButton>
             </div>
-
             <AnimatedButton
               onClick={() => {
                 setModalMonth(currentMonth);
@@ -477,8 +454,7 @@ const PeriodCalendar = ({
             </AnimatedButton>
           </div>
         </div>
-
-        {/* Main content with glassy styling */}
+        {/* Main content */}
         <div className="p-4 bg-white/60 backdrop-blur-sm">
           {activeTab === 'calendar' ? (
             <>
@@ -493,21 +469,16 @@ const PeriodCalendar = ({
                   </div>
                 ))}
               </div>
-
               {/* Calendar grid */}
               <div className="grid grid-cols-7 gap-1.5">
                 {days.map((day, idx) => {
                   const status = getDateStatus(day);
                   const dayClass = getDayClass(day, status);
-
                   return (
                     <AnimatedButton
                       key={idx}
-                      onClick={(e) => {
+                      onClick={() => {
                         setSelectedDate(day);
-                        if (isSameMonth(day, currentMonth)) {
-                          showDayInfo(day, e);
-                        }
                       }}
                       className={dayClass}
                     >
@@ -516,7 +487,6 @@ const PeriodCalendar = ({
                   );
                 })}
               </div>
-
               {/* Legend */}
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 <div className="flex items-center bg-teal-600/20 px-3 py-1 rounded-full space-x-1.5">
@@ -542,7 +512,7 @@ const PeriodCalendar = ({
               </div>
             </>
           ) : (
-            // Timeline tab with glassy teal styling
+            // Timeline view
             <div className="py-3">
               <div className="p-4 rounded-2xl mb-6 border border-teal-200 bg-white/80 backdrop-blur-sm shadow-sm">
                 <div className="flex items-start space-x-3">
@@ -563,71 +533,53 @@ const PeriodCalendar = ({
                   </div>
                 </div>
               </div>
-
-              {/* Cycle timeline progress bar with enhanced styling */}
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-teal-700 mb-2">Cycle Timeline</h3>
                 <div className="relative h-5 bg-teal-50 rounded-full overflow-hidden shadow-inner border border-teal-200">
-                  {/* Period portion */}
                   <div
                     className="absolute inset-y-0 left-0 bg-gradient-to-r from-pink-300 to-pink-100"
                     style={{
-                      width: `${(cycleInfo.periodLength / cycleInfo.cycleLength) * 100
-                        }%`,
+                      width: `${(cycleInfo.periodLength / cycleInfo.cycleLength) * 100}%`,
                     }}
                   />
-                  {/* Follicular portion (~9 days) */}
                   <div
                     className="absolute inset-y-0 bg-gradient-to-r from-teal-800 to-teal-600"
                     style={{
-                      left: `${(cycleInfo.periodLength / cycleInfo.cycleLength) * 100
-                        }%`,
+                      left: `${(cycleInfo.periodLength / cycleInfo.cycleLength) * 100}%`,
                       width: `${(9 / cycleInfo.cycleLength) * 100}%`,
                     }}
                   />
-                  {/* Ovulation (1 day) */}
                   <div
                     className="absolute inset-y-0 bg-gradient-to-r from-yellow-400 to-yellow-300"
                     style={{
-                      left: `${((cycleInfo.periodLength + 9) / cycleInfo.cycleLength) * 100
-                        }%`,
+                      left: `${((cycleInfo.periodLength + 9) / cycleInfo.cycleLength) * 100}%`,
                       width: `${(1 / cycleInfo.cycleLength) * 100}%`,
                     }}
                   />
-                  {/* Luteal portion */}
                   <div
                     className="absolute inset-y-0 right-0 bg-gradient-to-l from-orange-300 to-orange-100"
                     style={{
-                      width: `${((cycleInfo.cycleLength -
-                        cycleInfo.periodLength -
-                        10) /
+                      width: `${((cycleInfo.cycleLength - cycleInfo.periodLength - 10) /
                         cycleInfo.cycleLength) *
-                        100
-                        }%`,
+                        100}%`,
                     }}
                   />
-                  {/* Current day indicator */}
                   <div
                     className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-white border-2 border-teal-500 shadow-md"
                     style={{
-                      left: `${((cycleInfo.currentDay - 1) / cycleInfo.cycleLength) * 100
-                        }%`,
+                      left: `${((cycleInfo.currentDay - 1) / cycleInfo.cycleLength) * 100}%`,
                       marginLeft: '-0.6rem',
                     }}
                   />
                 </div>
-
                 <div className="flex justify-between mt-1 text-xs font-medium text-teal-600">
                   <span>Day 1</span>
                   <span>Day {Math.round(cycleInfo.cycleLength / 2)}</span>
                   <span>Day {cycleInfo.cycleLength}</span>
                 </div>
               </div>
-
-              {/* Upcoming events with enhanced styling */}
               <div className="space-y-4">
                 <h3 className="text-sm font-medium text-teal-700">Upcoming Events</h3>
-
                 {shouldShowPredictions() &&
                   predictions.predictions.predictedNextPeriodStart && (
                     <div className="flex items-center p-3 bg-pink-600/15 rounded-xl backdrop-blur-sm border border-pink-200/50 shadow-sm">
@@ -637,26 +589,16 @@ const PeriodCalendar = ({
                       <div>
                         <h4 className="text-sm font-medium text-pink-700">Next Period</h4>
                         <p className="text-xs text-pink-600">
-                          {format(
-                            new Date(predictions.predictions.predictedNextPeriodStart),
-                            'MMMM d'
-                          )}{' '}
+                          {format(new Date(predictions.predictions.predictedNextPeriodStart), 'MMMM d')}{' '}
                           -{' '}
-                          {format(
-                            new Date(predictions.predictions.predictedNextPeriodEnd),
-                            'MMMM d'
-                          )}
+                          {format(new Date(predictions.predictions.predictedNextPeriodEnd), 'MMMM d')}
                           {' • '}
-                          {differenceInDays(
-                            new Date(predictions.predictions.predictedNextPeriodStart),
-                            new Date()
-                          )}{' '}
+                          {differenceInDays(new Date(predictions.predictions.predictedNextPeriodStart), new Date())}{' '}
                           days away
                         </p>
                       </div>
                     </div>
                   )}
-
                 {shouldShowPredictions() &&
                   predictions.predictions.estimatedOvulationDate && (
                     <div className="flex items-center p-3 bg-yellow-100/60 rounded-xl backdrop-blur-sm border border-yellow-200/50 shadow-sm">
@@ -666,21 +608,14 @@ const PeriodCalendar = ({
                       <div>
                         <h4 className="text-sm font-medium text-yellow-700">Ovulation Day</h4>
                         <p className="text-xs text-yellow-600">
-                          {format(
-                            new Date(predictions.predictions.estimatedOvulationDate),
-                            'MMMM d'
-                          )}
+                          {format(new Date(predictions.predictions.estimatedOvulationDate), 'MMMM d')}
                           {' • '}
-                          {differenceInDays(
-                            new Date(predictions.predictions.estimatedOvulationDate),
-                            new Date()
-                          )}{' '}
+                          {differenceInDays(new Date(predictions.predictions.estimatedOvulationDate), new Date())}{' '}
                           days away
                         </p>
                       </div>
                     </div>
                   )}
-
                 {shouldShowPredictions() && predictions.predictions.fertileWindow && (
                   <div className="flex items-center p-3 bg-purple-100/60 rounded-xl backdrop-blur-sm border border-purple-200/50 shadow-sm">
                     <div className="p-2 rounded-full bg-purple-200 mr-3">
@@ -689,26 +624,16 @@ const PeriodCalendar = ({
                     <div>
                       <h4 className="text-sm font-medium text-purple-700">Fertile Window</h4>
                       <p className="text-xs text-purple-600">
-                        {format(
-                          new Date(predictions.predictions.fertileWindow.start),
-                          'MMMM d'
-                        )}{' '}
+                        {format(new Date(predictions.predictions.fertileWindow.start), 'MMMM d')}{' '}
                         -{' '}
-                        {format(
-                          new Date(predictions.predictions.fertileWindow.end),
-                          'MMMM d'
-                        )}
+                        {format(new Date(predictions.predictions.fertileWindow.end), 'MMMM d')}
                         {' • '}
-                        {differenceInDays(
-                          new Date(predictions.predictions.fertileWindow.start),
-                          new Date()
-                        )}{' '}
+                        {differenceInDays(new Date(predictions.predictions.fertileWindow.start), new Date())}{' '}
                         days away
                       </p>
                     </div>
                   </div>
                 )}
-
                 {!shouldShowPredictions() && (
                   <div className="flex items-center p-3 bg-gray-100/60 rounded-xl backdrop-blur-sm border border-gray-200/50 shadow-sm">
                     <div className="p-2 rounded-full bg-gray-200 mr-3">
@@ -727,7 +652,6 @@ const PeriodCalendar = ({
           )}
         </div>
       </div>
-
       {/* Day info tooltip */}
       {dayInfoModal.isOpen && (
         <div
@@ -745,7 +669,6 @@ const PeriodCalendar = ({
           />
         </div>
       )}
-
       {/* Period logging modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <div className="text-center mb-4">
@@ -754,7 +677,6 @@ const PeriodCalendar = ({
             Select the days when your period occurred
           </p>
         </div>
-
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
             <AnimatedButton
@@ -773,7 +695,6 @@ const PeriodCalendar = ({
               <ChevronRight size={20} />
             </AnimatedButton>
           </div>
-
           <div className="grid grid-cols-7 mb-2">
             {weekDays.map((day) => (
               <div
@@ -784,13 +705,11 @@ const PeriodCalendar = ({
               </div>
             ))}
           </div>
-
           <div className="grid grid-cols-7 gap-1">
             {modalDays.map((day, idx) => {
               const isSelected = isDateSelected(day);
               const inCurrentMonth = isSameMonth(day, modalMonth);
               const today = isToday(day);
-
               let className = `
                 flex items-center justify-center w-9 h-9 rounded-full 
                 ${today ? 'font-bold' : 'font-medium'} 
@@ -801,7 +720,6 @@ const PeriodCalendar = ({
                 }
                 transition-all duration-200 cursor-pointer
               `;
-
               return (
                 <div
                   key={idx}
@@ -814,7 +732,6 @@ const PeriodCalendar = ({
             })}
           </div>
         </div>
-
         <div className="flex text-sm font-medium">
           <AnimatedButton
             onClick={() => setIsModalOpen(false)}

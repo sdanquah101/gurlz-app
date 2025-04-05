@@ -5,6 +5,7 @@ import SidePanel from '../components/health/SidePanel';
 import Button from '../components/common/Button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useHealthStore } from '../store/healthStore';
+import { startOfMonth, endOfMonth, isWithinInterval, differenceInDays } from 'date-fns';
 
 /**
  * PageHeader Component
@@ -40,85 +41,131 @@ const PageHeader = ({ title, description, onAnalyticsClick, onResourcesClick }) 
   </div>
 );
 
-const Health: React.FC = () => {
-  const [state, setState] = useState({
-    selectedDate: new Date(),
-    showPanel: false,
-    activeTab: 'analytics' as 'analytics' | 'resources',
-  });
+const Health = () => {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showPanel, setShowPanel] = useState(false);
+  const [activeTab, setActiveTab] = useState('analytics'); // 'analytics' or 'resources'
 
-  // Use Zustand store for cycles and predictions
-  const { cycles, fetchCycles, addCycle, removeCycle, getPredictions, loading, error } = useHealthStore();
+  const {
+    cycles,
+    fetchCycles,
+    addCycle,
+    removeCycle,
+    getPredictions,
+    loading,
+    error,
+  } = useHealthStore();
 
-  // Fetch cycles on component mount
   useEffect(() => {
     fetchCycles();
   }, [fetchCycles]);
 
-  // Get predictions
   const predictions = getPredictions();
 
-  // Function to handle state updates
-  const handleStateUpdate = (key: keyof typeof state, value: any) => {
-    setState((prev) => ({ ...prev, [key]: value }));
+  // Helper function to remove all cycles in the target month.
+  const removeCyclesForMonth = async (targetMonth) => {
+    const modalStart = startOfMonth(targetMonth);
+    const modalEnd = endOfMonth(targetMonth);
+    const cyclesToRemove = cycles.filter((cycle) => {
+      const cycleStart = new Date(cycle.startDate);
+      const cycleEnd = new Date(cycle.endDate);
+      return (
+        isWithinInterval(cycleStart, { start: modalStart, end: modalEnd }) ||
+        isWithinInterval(cycleEnd, { start: modalStart, end: modalEnd }) ||
+        (cycleStart <= modalStart && cycleEnd >= modalEnd)
+      );
+    });
+    for (const cycle of cyclesToRemove) {
+      if (cycle.id) await removeCycle(cycle.id);
+    }
   };
 
-  // Handle period logging (start and end dates)
-  const handleLogPeriod = async (startDate: Date, endDate: Date) => {
-    try {
-      await addCycle({ startDate, endDate });
-    } catch (err) {
-      // Error is already handled in the store
-      console.error(err);
+  // Function to split an array of dates into contiguous segments.
+  const splitContiguous = (dates) => {
+    if (!dates.length) return [];
+    const segments = [];
+    let segment = [dates[0]];
+    for (let i = 1; i < dates.length; i++) {
+      const diff = differenceInDays(dates[i], dates[i - 1]);
+      if (diff === 1) {
+        segment.push(dates[i]);
+      } else {
+        segments.push(segment);
+        segment = [dates[i]];
+      }
     }
+    if (segment.length) segments.push(segment);
+    return segments;
+  };
+
+  /**
+   * handleLogPeriod now receives an array of selectedDates and a targetMonth.
+   * It:
+   * 1. Removes all cycles in the target month.
+   * 2. Splits the selected dates into contiguous segments.
+   * 3. Adds each segment as a new cycle.
+   * If selectedDates is empty, it simply deletes the cycles.
+   */
+  const handleLogPeriod = async (selectedDates, targetMonth) => {
+    try {
+      await removeCyclesForMonth(targetMonth);
+      if (selectedDates.length === 0) return;
+      // Split into contiguous segments.
+      const segments = splitContiguous(selectedDates.sort((a, b) => a.getTime() - b.getTime()));
+      for (const segment of segments) {
+        const startDate = segment[0];
+        const endDate = segment[segment.length - 1];
+        await addCycle({ startDate, endDate });
+      }
+    } catch (err) {
+      console.error('Error logging period:', err);
+    }
+  };
+
+  // Side panel controls.
+  const openAnalytics = () => {
+    setActiveTab('analytics');
+    setShowPanel(true);
+  };
+
+  const openResources = () => {
+    setActiveTab('resources');
+    setShowPanel(true);
+  };
+
+  const closePanel = () => {
+    setShowPanel(false);
   };
 
   return (
     <div className="space-y-4 md:space-y-8 px-3 sm:px-5 md:px-6">
-      {/* Header */}
       <PageHeader
         title="Reproductive Health"
         description="Track and understand your cycle"
-        onAnalyticsClick={() => {
-          handleStateUpdate('activeTab', 'analytics');
-          handleStateUpdate('showPanel', true);
-        }}
-        onResourcesClick={() => {
-          handleStateUpdate('activeTab', 'resources');
-          handleStateUpdate('showPanel', true);
-        }}
+        onAnalyticsClick={openAnalytics}
+        onResourcesClick={openResources}
       />
-
-      {/* Loading State */}
       {loading && cycles.length === 0 && (
         <div className="text-center py-4 md:py-8">
           <div className="animate-pulse">Loading your period data...</div>
         </div>
       )}
-
-      {/* Error State */}
       {error && (
         <div className="bg-red-50 p-3 md:p-4 rounded-lg text-red-700 mb-3 md:mb-4">
           <p>Error: {error}</p>
-          <button
-            className="underline mt-2"
-            onClick={() => fetchCycles()}
-          >
+          <button className="underline mt-2" onClick={fetchCycles}>
             Try again
           </button>
         </div>
       )}
-
-      {/* Main Content */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
-        {/* Calendar Section */}
         <div className="md:col-span-1 lg:col-span-2">
           <PeriodCalendar
-            cycles={cycles} // Pass cycles from the Zustand store
-            predictions={predictions} // Pass predictions to PeriodCalendar
-            onLogPeriod={handleLogPeriod} // Pass logging function
-            selectedDate={state.selectedDate} // Pass selected date
-            setSelectedDate={(date: Date) => handleStateUpdate('selectedDate', date)} // Update selected date
+            cycles={cycles}
+            predictions={predictions}
+            onLogPeriod={handleLogPeriod}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
           />
           {!loading && cycles.length === 0 && (
             <div className="text-center text-gray-500 mt-3 md:mt-4">
@@ -126,26 +173,20 @@ const Health: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Tracker Section */}
         <div>
           <SymptomTracker
-            selectedDate={state.selectedDate}
+            selectedDate={selectedDate}
             onLogSymptom={(symptomData) => {
-              // Implement your symptom logging logic here
-              console.log("Logging symptom:", symptomData);
+              console.log('Logging symptom:', symptomData);
             }}
           />
         </div>
-
       </div>
-
-      {/* Side Panel */}
       <SidePanel
-        isOpen={state.showPanel}
-        onClose={() => handleStateUpdate('showPanel', false)}
-        activeTab={state.activeTab}
-        onTabChange={(tab) => handleStateUpdate('activeTab', tab)}
+        isOpen={showPanel}
+        onClose={closePanel}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab)}
         className="fixed inset-0 bg-white z-50 p-4 md:p-6 overflow-auto"
       />
     </div>
